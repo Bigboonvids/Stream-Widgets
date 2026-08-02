@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Background Music Widget</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #ffffff;
+  }
+
+  #nowplaying {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 8px;
+    font-size: 15px;
+    max-width: 380px;
+  }
+
+  #note {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  #title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #tapOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #tapOverlay.hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="nowplaying">
+  <span id="note">🎵</span>
+  <span id="title">Loading playlist…</span>
+</div>
+
+<div id="tapOverlay">Tap once to start music</div>
+
+<audio id="player" preload="auto"></audio>
+
+<script>
+  // =========================================================
+  // CONFIG — edit these three lines to match your repo
+  // =========================================================
+  const REPO_OWNER = "Bigboonvids";   // your GitHub username
+  const REPO_NAME = "Stream-Widgets"; // your repo name
+  const TRACKS_FOLDER = "tracks";     // your mp3s now live in this folder
+
+  const SHUFFLE = true; // set to false to play in the order GitHub lists them
+
+  // ---- Auto-discovery: pulls the file list from GitHub directly ----
+  async function fetchTracks() {
+    const path = TRACKS_FOLDER ? `${TRACKS_FOLDER}` : "";
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+    const data = await res.json();
+    return data
+      .filter((f) => f.type === "file" && /\.mp3$/i.test(f.name))
+      .map((f) => ({
+        file: f.download_url, // already correctly encoded, handles spaces/special chars
+        title: f.name.replace(/\.mp3$/i, ""),
+      }));
+  }
+
+  // ---- Playback logic ----
+  const player = document.getElementById("player");
+  const titleEl = document.getElementById("title");
+  const tapOverlay = document.getElementById("tapOverlay");
+
+  let allTracks = [];
+  let queue = [];
+
+  function buildQueue() {
+    queue = [...allTracks];
+    if (SHUFFLE) {
+      for (let i = queue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [queue[i], queue[j]] = [queue[j], queue[i]];
+      }
+    }
+  }
+
+  function playNext() {
+    if (queue.length === 0) {
+      if (allTracks.length === 0) {
+        titleEl.textContent = "No mp3 files found";
+        return;
+      }
+      buildQueue();
+    }
+    const next = queue.shift();
+    player.src = next.file;
+    titleEl.textContent = next.title;
+    player.play().catch(() => {
+      // Autoplay was blocked, show tap-to-start overlay
+      tapOverlay.classList.remove("hidden");
+    });
+  }
+
+  player.addEventListener("ended", playNext);
+
+  tapOverlay.addEventListener("click", () => {
+    tapOverlay.classList.add("hidden");
+    player.play();
+  });
+
+  // Kick things off
+  titleEl.textContent = "Finding tracks…";
+  fetchTracks()
+    .then((tracks) => {
+      allTracks = tracks;
+      buildQueue();
+      playNext();
+    })
+    .catch((err) => {
+      titleEl.textContent = "Couldn't load track list";
+      console.error(err);
+    });
+</script>
+
+</body>
+</html>
