@@ -11,7 +11,7 @@
     background: black;
     overflow: hidden;
   }
-  video {
+  img {
     width: 100vw;
     height: 100vh;
     object-fit: cover;
@@ -21,44 +21,7 @@
 </head>
 <body>
 
-<video id="brbVideo" autoplay muted loop playsinline>
-  <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-</video>
-
-<script>
-  const video = document.getElementById("brbVideo");
-
-  // Try to play immediately
-  video.play().catch(() => {
-    // Autoplay was blocked — try again as soon as the video data is ready
-  });
-
-  video.addEventListener("loadeddata", () => {
-    video.play().catch(() => {});
-  });
-
-  // Safety net: force playback on any interaction with the page,
-  // same fix that solved this exact issue for the music widget.
-  function unlockOnFirstInteraction() {
-    video.play().catch(() => {});
-    document.removeEventListener("click", unlockOnFirstInteraction);
-    document.removeEventListener("touchend", unlockOnFirstInteraction);
-  }
-  document.addEventListener("click", unlockOnFirstInteraction);
-  document.addEventListener("touchend", unlockOnFirstInteraction);
-
-  // Extra safety net: retry every second for the first 10 seconds in case
-  // the widget loads before Moblin's view is fully ready to play media.
-  let attempts = 0;
-  const retry = setInterval(() => {
-    attempts++;
-    if (!video.paused || attempts > 10) {
-      clearInterval(retry);
-      return;
-    }
-    video.play().catch(() => {});
-  }, 1000);
-</script>
+<img src="https://cdn.jsdelivr.net/gh/Bigboonvids/Stream-Widgets@main/brb.gif" alt="Be right back">
 
 </body>
 </html>
